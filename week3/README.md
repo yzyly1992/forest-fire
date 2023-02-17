@@ -1,5 +1,3 @@
-# WEEK 3 REPORT
-
 ## YOLO Version Comparison (Big Version and Small Version)
 
 #### YOLOV5
