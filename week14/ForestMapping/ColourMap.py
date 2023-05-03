@@ -5,6 +5,7 @@ import numpy as np
 from my_utils.file_readers import read_images
 from my_utils.drawing_functions import draw_box, draw_polygon
 from my_utils.rect_calculate import extract_4_vertices_rect
+from my_utils.colours import get_colour
 
 
 class ColourMap:
@@ -43,10 +44,26 @@ class ColourMap:
                 print(f"{img_id}/{len(self.imgs)} images are processed.")
             if img_name not in self.imgs_merged_boxes.keys():
                 continue
-            for cls, poly_boxes_cls in self.imgs_merged_boxes[img_name].items():  # per class
-                for poly_box in poly_boxes_cls:  # per box (polygon)
-                    img = draw_polygon(img, cls, np.array([poly_box]), alpha)
+            draw_order = ["Alive Tree", "Debris", "Dead Tree", "Beetle-Fire Tree"]
+            # mask = np.zeros(img.shape[:2], dtype="uint8")
+            canvas = np.zeros(img.shape,  dtype="uint8")
+            for index in draw_order:
+                for cls, poly_boxes_cls in self.imgs_merged_boxes[img_name].items():  # per class
+                    if index == cls:
+                        colour = get_colour(cls)
+                        for poly_box in poly_boxes_cls:  # per box (polygon)
+                            canvas = cv2.fillPoly(canvas, np.array([poly_box]), colour)
+                        # img = draw_polygon(img, cls, np.array([poly_box]), alpha)
+#             mask = (canvas[:,:] == np.array([0,0,0])).astype(np.uint8)
+            mask = cv2.inRange(canvas, np.array([0,0,0]), np.array([1,1,1]))
+            mask_rev = cv2.bitwise_not(mask)
+            img_bg = cv2.bitwise_and(img, img, mask=mask)
+            color_boxes = cv2.bitwise_and(canvas, canvas, mask=mask_rev)
+            add_up = cv2.add(img_bg, color_boxes)
+            img = cv2.addWeighted(add_up, alpha, img.copy(), 1-alpha, 0) 
+            
             cv2.imwrite(os.path.join(self.out_path, f"map_vis_{img_name}"), cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
         print(f"All alive & dead trees are mapped with yellow or red colours across {len(self.imgs)} images.")
 
         print(f"Mapped images are saved in \"{self.out_path}\".")
+
