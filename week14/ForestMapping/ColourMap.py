@@ -38,29 +38,21 @@ class ColourMap:
         # print(f"All {len(self.imgs)} images are mapped with blue colour.")
 
         # map each bounding box (polygon) with yellow or red colour
-        print(f"Start mapping alive, beetle/fire, dead trees and debris in each image with colours.")
+        print(f"Start mapping alive, beetle-fire, dead trees and debris in each image with colours.")
         for img_id, (img_name, img) in enumerate(self.imgs.items()):
             if img_id % 5 == 0:
                 print(f"{img_id}/{len(self.imgs)} images are processed.")
             if img_name not in self.imgs_merged_boxes.keys():
                 continue
             draw_order = ["Alive Tree", "Debris", "Dead Tree", "Beetle-Fire Tree"]
-            # mask = np.zeros(img.shape[:2], dtype="uint8")
-            canvas = np.zeros(img.shape,  dtype="uint8")
+            canvas = img.copy()
             for index in draw_order:
                 for cls, poly_boxes_cls in self.imgs_merged_boxes[img_name].items():  # per class
                     if index == cls:
                         colour = get_colour(cls)
                         for poly_box in poly_boxes_cls:  # per box (polygon)
                             canvas = cv2.fillPoly(canvas, np.array([poly_box]), colour)
-                        # img = draw_polygon(img, cls, np.array([poly_box]), alpha)
-#             mask = (canvas[:,:] == np.array([0,0,0])).astype(np.uint8)
-            mask = cv2.inRange(canvas, np.array([0,0,0]), np.array([1,1,1]))
-            mask_rev = cv2.bitwise_not(mask)
-            img_bg = cv2.bitwise_and(img, img, mask=mask)
-            color_boxes = cv2.bitwise_and(canvas, canvas, mask=mask_rev)
-            add_up = cv2.add(img_bg, color_boxes)
-            img = cv2.addWeighted(add_up, alpha, img.copy(), 1-alpha, 0) 
+            img = cv2.addWeighted(canvas, alpha, img.copy(), 1-alpha, 0)
             
             cv2.imwrite(os.path.join(self.out_path, f"map_vis_{img_name}"), cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
         print(f"All alive & dead trees are mapped with yellow or red colours across {len(self.imgs)} images.")
